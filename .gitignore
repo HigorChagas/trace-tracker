@@ -11,3 +11,6 @@ wheels/
 
 # Database
 database.db
+
+# .environments
+.env

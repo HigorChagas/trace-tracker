@@ -6,6 +6,7 @@ from services.log import send_log
 router = APIRouter()
 
 
+# TODO: adicionar get_current_user como Depends na rota /search-log/
 @router.post("/search-log/")
 async def search_log(message: Message):
     return await send_log(message.log)

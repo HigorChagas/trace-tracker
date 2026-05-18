@@ -28,12 +28,12 @@ async def login_user(session: AsyncSession, email: str, password: str):
     get_user_info = await get_user(session, email)
 
     if not get_user_info:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Invalid email or password")
 
     check_password = verify_password(password, get_user_info.password)
 
     if check_password:
-        token = create_access_token({"sub": get_user_info.email})
-        return {"token": token}
+        access_token = create_access_token({"sub": get_user_info.email})
+        return {"access_token": access_token, "token_type": "bearer"}
     else:
         raise HTTPException(status_code=401, detail="Invalid password")

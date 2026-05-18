@@ -4,7 +4,6 @@ from sqlalchemy import ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
-from models.user import User
 
 
 class Error(Base):

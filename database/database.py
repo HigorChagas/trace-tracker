@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from models import error, user
 from models.base import Base
 
 DATABASE_URL = "sqlite+aiosqlite:///./database.db"

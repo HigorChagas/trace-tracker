@@ -5,6 +5,7 @@ from sqlalchemy import Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
+from models.error import Error
 
 
 class User(Base):

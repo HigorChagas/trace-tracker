@@ -5,7 +5,7 @@ from sqlalchemy import Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
-from models.error import Error
+from models.error_history import ErrorHistory
 
 
 class User(Base):
@@ -18,4 +18,4 @@ class User(Base):
     password: Mapped[str] = mapped_column(String(255))
     create_date: Mapped[datetime] = mapped_column(insert_default=func.now())
 
-    errors: Mapped[list["Error"]] = relationship(back_populates="user")
+    errors: Mapped[list["ErrorHistory"]] = relationship(back_populates="user")

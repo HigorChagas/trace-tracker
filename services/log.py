@@ -1,5 +1,7 @@
 from fastapi import HTTPException
 
+from services.ai import analyze_error
+
 
 async def send_log(log: str):
     mapped_errors = {
@@ -21,7 +23,7 @@ async def send_log(log: str):
     for error in mapped_errors:
         error_name = error.lower()
         if message_log in error_name:
-            return mapped_errors[error]
+            return analyze_error(log)
 
     if not message_log or message_log not in mapped_errors:
         raise HTTPException(status_code=404, detail="Error not found")

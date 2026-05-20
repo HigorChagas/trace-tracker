@@ -20,6 +20,6 @@ def analyze_error(error: str):
     """
 
     response = client.chat.completions.create(
-        model="llama3.2", messages=[{"role": "user", "content": content}]
+        model="qwen2.5-coder:1.5b", messages=[{"role": "user", "content": content}]
     )
     return response.choices[0].message.content

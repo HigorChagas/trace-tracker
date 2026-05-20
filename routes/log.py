@@ -16,4 +16,4 @@ async def search_log(
     current_user=Depends(get_current_user),
     session=Depends(get_async_session),
 ):
-    return await send_log(session, message.log)
+    return await send_log(session, message.log, current_user.id)

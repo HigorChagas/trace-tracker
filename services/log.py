@@ -55,3 +55,9 @@ async def delete_error_history(session: AsyncSession, error_id: int):
     await session.execute(stmt)
     await session.commit()
     return {"message": "Item deleted successfully"}
+
+
+async def search_error_history(session: AsyncSession, error_id: int):
+    stmt = select(ErrorHistory).where(ErrorHistory.id == error_id)
+    result = await session.execute(stmt)
+    return result.scalars().one_or_none()

@@ -42,3 +42,9 @@ async def save_error_history(
     session.add(save_history)
     await session.commit()
     return {"message": "Error registered!"}
+
+
+async def get_error_history(session: AsyncSession, user_id: int):
+    stmt = select(ErrorHistory).where(ErrorHistory.user_id == user_id)
+    result = await session.execute(stmt)
+    return result.scalars().all()

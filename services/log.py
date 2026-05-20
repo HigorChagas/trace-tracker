@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.error_history import ErrorHistory
@@ -48,3 +48,10 @@ async def get_error_history(session: AsyncSession, user_id: int):
     stmt = select(ErrorHistory).where(ErrorHistory.user_id == user_id)
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+async def delete_error_history(session: AsyncSession, error_id: int):
+    stmt = delete(ErrorHistory).where(ErrorHistory.id == error_id)
+    await session.execute(stmt)
+    await session.commit()
+    return {"message": "Item deleted successfully"}

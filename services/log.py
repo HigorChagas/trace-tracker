@@ -8,8 +8,9 @@ from services.ai import analyze_error
 
 
 async def send_log(session: AsyncSession, log: str, user_id: int):
-    last_line = log.splitlines()[-1].lower()
-    known_error = await get_known_error(session, last_line)
+    last_line = log.splitlines()[-1]
+    last_line_lower = last_line.lower()
+    known_error = await get_known_error(session, last_line_lower)
     if not known_error:
         raise HTTPException(status_code=404, detail="Error not found in our database")
     ia_response = analyze_error(log)

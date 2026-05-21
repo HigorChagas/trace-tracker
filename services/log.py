@@ -11,7 +11,7 @@ async def send_log(session: AsyncSession, log: str, user_id: int):
     last_line = log.splitlines()[-1].lower()
     known_error = await get_known_error(session, last_line)
     if not known_error:
-        raise HTTPException(status_code=404, detail="Error not found")
+        raise HTTPException(status_code=404, detail="Error not found in our database")
     ia_response = analyze_error(log)
     await save_error_history(session, last_line, log, ia_response, "Python", user_id)
     return ia_response
@@ -64,8 +64,10 @@ async def search_error_history(session: AsyncSession, error_id: int, id: int):
     full_result = result.scalars().one_or_none()
 
     if not full_result:
-        raise HTTPException(status_code=404, detail="Error not found")
+        raise HTTPException(status_code=404, detail="History entry not found")
 
     if full_result.user_id != id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(
+            status_code=403, detail="You don't have permission to access this entry"
+        )
     return full_result

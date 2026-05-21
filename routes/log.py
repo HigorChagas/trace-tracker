@@ -36,7 +36,7 @@ async def delete_log_history(
     current_user=Depends(get_current_user),
     session=Depends(get_async_session),
 ):
-    return await delete_error_history(session, error_id)
+    return await delete_error_history(session, error_id, current_user.id)
 
 
 @router.get("/history/{error_id}", status_code=status.HTTP_200_OK)
@@ -45,4 +45,4 @@ async def get_log_history_by_id(
     current_user=Depends(get_current_user),
     session=Depends(get_async_session),
 ):
-    return await search_error_history(session, error_id)
+    return await search_error_history(session, error_id, current_user.id)

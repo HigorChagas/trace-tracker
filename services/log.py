@@ -50,14 +50,22 @@ async def get_error_history(session: AsyncSession, user_id: int):
     return result.scalars().all()
 
 
-async def delete_error_history(session: AsyncSession, error_id: int):
+async def delete_error_history(session: AsyncSession, error_id: int, id: int):
+    await search_error_history(session, error_id, id)
     stmt = delete(ErrorHistory).where(ErrorHistory.id == error_id)
     await session.execute(stmt)
     await session.commit()
     return {"message": "Item deleted successfully"}
 
 
-async def search_error_history(session: AsyncSession, error_id: int):
+async def search_error_history(session: AsyncSession, error_id: int, id: int):
     stmt = select(ErrorHistory).where(ErrorHistory.id == error_id)
     result = await session.execute(stmt)
-    return result.scalars().one_or_none()
+    full_result = result.scalars().one_or_none()
+
+    if not full_result:
+        raise HTTPException(status_code=404, detail="Error not found")
+
+    if full_result.user_id != id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return full_result

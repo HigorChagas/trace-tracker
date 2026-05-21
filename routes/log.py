@@ -25,9 +25,12 @@ async def search_log(
 
 @router.get("/history/", status_code=status.HTTP_200_OK)
 async def get_log_history(
-    current_user=Depends(get_current_user), session=Depends(get_async_session)
+    current_user=Depends(get_current_user),
+    session=Depends(get_async_session),
+    page: int = 1,
+    limit: int = 10,
 ):
-    return await get_error_history(session, current_user.id)
+    return await get_error_history(session, current_user.id, page, limit)
 
 
 @router.delete("/history/{error_id}", status_code=status.HTTP_200_OK)

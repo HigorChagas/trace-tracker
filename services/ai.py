@@ -3,7 +3,7 @@ from openai import OpenAI
 from schemas.settings import settings
 
 client = OpenAI(
-    base_url="http://localhost:11434/v1",
+    base_url=settings.ai_host,
     api_key="ollama",
 )
 

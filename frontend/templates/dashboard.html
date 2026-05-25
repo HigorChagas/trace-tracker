@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Trace Tracker — Dashboard</title>
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap");
+
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            :root {
+                --bg: #0a0e0f;
+                --surface: #111618;
+                --surface2: #181e20;
+                --border: #1e2729;
+                --accent: #00d4a0;
+                --accent-dim: #00d4a015;
+                --accent-hover: #00edb3;
+                --text: #e8f0ee;
+                --text-muted: #6b8880;
+                --text-dim: #3d5450;
+                --error: #ff5f5f;
+                --mono: "JetBrains Mono", monospace;
+                --sans: "Inter", sans-serif;
+            }
+
+            body {
+                background: var(--bg);
+                color: var(--text);
+                font-family: var(--sans);
+                min-height: 100vh;
+            }
+
+            .bg-grid {
+                position: fixed;
+                inset: 0;
+                background-image:
+                    linear-gradient(var(--border) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+                background-size: 40px 40px;
+                opacity: 0.3;
+                pointer-events: none;
+            }
+
+            header {
+                position: relative;
+                z-index: 10;
+                border-bottom: 1px solid var(--border);
+                padding: 1rem 2rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: var(--bg);
+            }
+
+            .logo {
+                font-family: var(--mono);
+                font-size: 0.95rem;
+                font-weight: 700;
+                color: var(--accent);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .logo::before {
+                content: ">";
+                color: var(--text-muted);
+                font-weight: 400;
+            }
+
+            .logout-btn {
+                font-family: var(--mono);
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                background: transparent;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 0.4rem 0.8rem;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+
+            .logout-btn:hover {
+                color: var(--error);
+                border-color: var(--error);
+            }
+
+            .layout {
+                position: relative;
+                z-index: 1;
+                display: grid;
+                grid-template-columns: 1fr 340px;
+                gap: 0;
+                height: calc(100vh - 57px);
+            }
+
+            .main-panel {
+                padding: 2rem;
+                overflow-y: auto;
+                border-right: 1px solid var(--border);
+            }
+
+            .sidebar {
+                overflow-y: auto;
+                padding: 1.5rem;
+            }
+
+            .section-label {
+                font-family: var(--mono);
+                font-size: 0.65rem;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: var(--text-dim);
+                margin-bottom: 1rem;
+            }
+
+            .log-input {
+                width: 100%;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 1rem;
+                color: var(--text);
+                font-family: var(--mono);
+                font-size: 0.8rem;
+                line-height: 1.6;
+                resize: vertical;
+                min-height: 160px;
+                outline: none;
+                transition: border-color 0.15s;
+            }
+
+            .log-input:focus {
+                border-color: var(--accent);
+            }
+            .log-input::placeholder {
+                color: var(--text-dim);
+            }
+
+            .analyze-btn {
+                margin-top: 1rem;
+                padding: 0.7rem 1.5rem;
+                background: var(--accent);
+                color: #0a0e0f;
+                border: none;
+                border-radius: 6px;
+                font-family: var(--mono);
+                font-size: 0.8rem;
+                font-weight: 700;
+                cursor: pointer;
+                letter-spacing: 0.5px;
+                transition: all 0.15s;
+            }
+
+            .analyze-btn:hover {
+                background: var(--accent-hover);
+            }
+            .analyze-btn:active {
+                transform: scale(0.99);
+            }
+
+            .result-area {
+                margin-top: 2rem;
+            }
+
+            .result-box {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 1.25rem;
+                display: none;
+            }
+
+            .result-box.visible {
+                display: block;
+            }
+
+            .result-box pre {
+                font-family: var(--mono);
+                font-size: 0.8rem;
+                line-height: 1.7;
+                white-space: pre-wrap;
+                word-break: break-word;
+                color: var(--text);
+            }
+
+            .loading-indicator {
+                display: none;
+                font-family: var(--mono);
+                font-size: 0.8rem;
+                color: var(--accent);
+                margin-top: 1rem;
+                animation: pulse 1.5s ease-in-out infinite;
+            }
+
+            .loading-indicator.visible {
+                display: block;
+            }
+
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.4;
+                }
+            }
+
+            .history-item {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 0.9rem;
+                margin-bottom: 0.75rem;
+                cursor: pointer;
+                transition: border-color 0.15s;
+            }
+
+            .history-item:hover {
+                border-color: var(--accent);
+            }
+
+            .history-error-name {
+                font-family: var(--mono);
+                font-size: 0.75rem;
+                color: var(--accent);
+                margin-bottom: 0.3rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .history-date {
+                font-family: var(--mono);
+                font-size: 0.65rem;
+                color: var(--text-dim);
+            }
+
+            .history-delete {
+                float: right;
+                background: transparent;
+                border: none;
+                color: var(--text-dim);
+                cursor: pointer;
+                font-family: var(--mono);
+                font-size: 0.7rem;
+                padding: 0;
+                transition: color 0.15s;
+            }
+
+            .history-delete:hover {
+                color: var(--error);
+            }
+
+            .empty-history {
+                font-family: var(--mono);
+                font-size: 0.75rem;
+                color: var(--text-dim);
+                text-align: center;
+                padding: 2rem 0;
+            }
+
+            .error-msg {
+                font-family: var(--mono);
+                font-size: 0.75rem;
+                color: var(--error);
+                margin-top: 0.75rem;
+                display: none;
+            }
+
+            .error-msg.visible {
+                display: block;
+            }
+
+            #result-content h1,
+            #result-content h2,
+            #result-content h3 {
+                color: var(--accent);
+                font-family: var(--mono);
+                font-size: 0.85rem;
+                margin: 1.2rem 0 0.5rem;
+                letter-spacing: 0.5px;
+            }
+
+            #result-content p {
+                font-size: 0.82rem;
+                line-height: 1.8;
+                margin-bottom: 0.75rem;
+                color: #a8c4be;
+            }
+
+            #result-content strong {
+                color: var(--text);
+                font-weight: 500;
+            }
+
+            #result-content code {
+                font-family: var(--mono);
+                font-size: 0.75rem;
+                background: #0d1a17;
+                padding: 0.15rem 0.4rem;
+                border-radius: 4px;
+                color: #7fffd4;
+                border: 1px solid #1a3530;
+            }
+
+            #result-content pre {
+                background: #0a1412;
+                border: 1px solid #1a3530;
+                border-radius: 6px;
+                padding: 1rem;
+                overflow-x: auto;
+                margin: 0.75rem 0;
+            }
+
+            #result-content pre code {
+                background: transparent;
+                padding: 0;
+                color: #c8e6c9;
+                border: none;
+                font-size: 0.78rem;
+            }
+
+            #result-content ol,
+            #result-content ul {
+                padding-left: 1.5rem;
+                margin-bottom: 0.75rem;
+                font-size: 0.82rem;
+                line-height: 1.8;
+                color: #a8c4be;
+            }
+
+            #result-content li {
+                margin-bottom: 0.3rem;
+            }
+
+            #result-content li::marker {
+                color: var(--accent);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="bg-grid"></div>
+
+        <header>
+            <div class="logo">trace-tracker</div>
+            <button class="logout-btn" onclick="logout()">logout</button>
+        </header>
+
+        <div class="layout">
+            <div class="main-panel">
+                <p class="section-label">analyze error</p>
+
+                <textarea
+                    id="log-input"
+                    class="log-input"
+                    placeholder="Paste your stack trace here...&#10;&#10;Traceback (most recent call last):&#10;  File 'main.py', line 4&#10;ZeroDivisionError: division by zero"
+                ></textarea>
+
+                <div id="analyze-error" class="error-msg"></div>
+
+                <button class="analyze-btn" onclick="analyzeLog()">
+                    analyze →
+                </button>
+
+                <div class="result-area">
+                    <div id="loading" class="loading-indicator">
+                        analyzing your error...
+                    </div>
+                    <div id="result-box" class="result-box">
+                        <pre id="result-content"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <p class="section-label">history</p>
+                <div id="history-list">
+                    <p class="empty-history">no history yet</p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const token = localStorage.getItem("token");
+            if (!token) window.location.href = "/";
+
+            function getHeaders() {
+                return {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                };
+            }
+
+            function logout() {
+                localStorage.removeItem("token");
+                window.location.href = "/";
+            }
+
+            async function analyzeLog() {
+                const log = document.getElementById("log-input").value.trim();
+                const errorEl = document.getElementById("analyze-error");
+                const loadingEl = document.getElementById("loading");
+                const resultBox = document.getElementById("result-box");
+                const resultContent = document.getElementById("result-content");
+
+                if (!log) return;
+
+                errorEl.classList.remove("visible");
+                resultBox.classList.remove("visible");
+                loadingEl.classList.add("visible");
+
+                try {
+                    const response = await fetch("/search-log/", {
+                        method: "POST",
+                        headers: getHeaders(),
+                        body: JSON.stringify({ log }),
+                    });
+
+                    const data = await response.json();
+                    loadingEl.classList.remove("visible");
+
+                    if (response.ok) {
+                        resultContent.innerHTML = marked.parse(data);
+                        resultBox.classList.add("visible");
+                        loadHistory();
+                    } else {
+                        errorEl.textContent =
+                            data.message || "Error analyzing log";
+                        errorEl.classList.add("visible");
+                    }
+                } catch (err) {
+                    loadingEl.classList.remove("visible");
+                    errorEl.textContent = "Failed to connect to server";
+                    errorEl.classList.add("visible");
+                }
+            }
+
+            async function loadHistory() {
+                try {
+                    const response = await fetch("/history/", {
+                        headers: getHeaders(),
+                    });
+                    const data = await response.json();
+                    renderHistory(data);
+                } catch (err) {
+                    console.error("Failed to load history");
+                }
+            }
+
+            function renderHistory(items) {
+                const list = document.getElementById("history-list");
+                if (!items || items.length === 0) {
+                    list.innerHTML =
+                        '<p class="empty-history">no history yet</p>';
+                    return;
+                }
+
+                list.innerHTML = items
+                    .map(
+                        (item) => `
+                <div class="history-item" onclick="showHistoryItem(${item.id})">
+                    <button class="history-delete" onclick="deleteItem(event, ${item.id})">delete</button>
+                    <div class="history-error-name">${item.error_name}</div>
+                    <div class="history-date">${new Date(item.create_date).toLocaleDateString()}</div>
+                </div>
+            `,
+                    )
+                    .join("");
+            }
+
+            async function showHistoryItem(id) {
+                try {
+                    const response = await fetch(`/history/${id}`, {
+                        headers: getHeaders(),
+                    });
+                    const data = await response.json();
+                    const resultBox = document.getElementById("result-box");
+                    const resultContent =
+                        document.getElementById("result-content");
+                    resultContent.textContent = data.ia_response;
+                    resultBox.classList.add("visible");
+                } catch (err) {
+                    console.error("Failed to load item");
+                }
+            }
+
+            async function deleteItem(event, id) {
+                event.stopPropagation();
+                try {
+                    await fetch(`/history/${id}`, {
+                        method: "DELETE",
+                        headers: getHeaders(),
+                    });
+                    loadHistory();
+                } catch (err) {
+                    console.error("Failed to delete item");
+                }
+            }
+
+            loadHistory();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Trace Tracker</title>
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap");
+
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            :root {
+                --bg: #0a0e0f;
+                --surface: #111618;
+                --surface2: #181e20;
+                --border: #1e2729;
+                --accent: #00d4a0;
+                --accent-dim: #00d4a020;
+                --accent-hover: #00edb3;
+                --text: #e8f0ee;
+                --text-muted: #6b8880;
+                --text-dim: #3d5450;
+                --error: #ff5f5f;
+                --mono: "JetBrains Mono", monospace;
+                --sans: "Inter", sans-serif;
+            }
+
+            body {
+                background: var(--bg);
+                color: var(--text);
+                font-family: var(--sans);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+            }
+
+            .bg-grid {
+                position: fixed;
+                inset: 0;
+                background-image:
+                    linear-gradient(var(--border) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+                background-size: 40px 40px;
+                opacity: 0.4;
+                pointer-events: none;
+            }
+
+            .bg-glow {
+                position: fixed;
+                width: 600px;
+                height: 600px;
+                border-radius: 50%;
+                background: radial-gradient(
+                    circle,
+                    #00d4a010 0%,
+                    transparent 70%
+                );
+                top: -200px;
+                right: -200px;
+                pointer-events: none;
+            }
+
+            .container {
+                position: relative;
+                z-index: 1;
+                width: 100%;
+                max-width: 420px;
+                padding: 1.5rem;
+            }
+
+            .logo {
+                font-family: var(--mono);
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: var(--accent);
+                letter-spacing: -0.5px;
+                margin-bottom: 2.5rem;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .logo::before {
+                content: ">";
+                color: var(--text-muted);
+                font-weight: 400;
+            }
+
+            .tabs {
+                display: flex;
+                gap: 0;
+                margin-bottom: 2rem;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .tab {
+                flex: 1;
+                padding: 0.65rem;
+                background: transparent;
+                border: none;
+                color: var(--text-muted);
+                font-family: var(--mono);
+                font-size: 0.8rem;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                letter-spacing: 0.5px;
+            }
+
+            .tab.active {
+                background: var(--accent-dim);
+                color: var(--accent);
+            }
+
+            .tab:hover:not(.active) {
+                color: var(--text);
+                background: var(--surface2);
+            }
+
+            .form-panel {
+                display: none;
+            }
+
+            .form-panel.active {
+                display: block;
+            }
+
+            .field {
+                margin-bottom: 1rem;
+            }
+
+            .field label {
+                display: block;
+                font-family: var(--mono);
+                font-size: 0.7rem;
+                color: var(--text-muted);
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                margin-bottom: 0.4rem;
+            }
+
+            .field input {
+                width: 100%;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 0.7rem 0.9rem;
+                color: var(--text);
+                font-family: var(--mono);
+                font-size: 0.85rem;
+                outline: none;
+                transition: border-color 0.15s ease;
+            }
+
+            .field input:focus {
+                border-color: var(--accent);
+            }
+
+            .field input::placeholder {
+                color: var(--text-dim);
+            }
+
+            .btn-primary {
+                width: 100%;
+                padding: 0.75rem;
+                background: var(--accent);
+                color: #0a0e0f;
+                border: none;
+                border-radius: 6px;
+                font-family: var(--mono);
+                font-size: 0.85rem;
+                font-weight: 700;
+                cursor: pointer;
+                letter-spacing: 0.5px;
+                transition: all 0.15s ease;
+                margin-top: 0.5rem;
+            }
+
+            .btn-primary:hover {
+                background: var(--accent-hover);
+            }
+
+            .btn-primary:active {
+                transform: scale(0.99);
+            }
+
+            .error-msg {
+                font-family: var(--mono);
+                font-size: 0.75rem;
+                color: var(--error);
+                margin-top: 1rem;
+                padding: 0.6rem 0.9rem;
+                border: 1px solid #ff5f5f30;
+                border-radius: 6px;
+                background: #ff5f5f08;
+                display: none;
+            }
+
+            .error-msg.visible {
+                display: block;
+            }
+
+            .footer-text {
+                font-size: 0.75rem;
+                color: var(--text-dim);
+                text-align: center;
+                margin-top: 2rem;
+                font-family: var(--mono);
+            }
+
+            .htmx-indicator {
+                display: none;
+            }
+
+            .htmx-request .htmx-indicator {
+                display: inline;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="bg-grid"></div>
+        <div class="bg-glow"></div>
+
+        <div class="container">
+            <div class="logo">trace-tracker</div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('login')">
+                    login
+                </button>
+                <button class="tab" onclick="switchTab('register')">
+                    register
+                </button>
+            </div>
+
+            <div id="login-panel" class="form-panel active">
+                <form
+                    hx-post="/login/"
+                    hx-swap="none"
+                    hx-on::after-request="handleLogin(event)"
+                    hx-ext="json-enc"
+                >
+                    <div class="field">
+                        <label>email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            required
+                        />
+                    </div>
+                    <div class="field">
+                        <label>password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <span>sign in</span>
+                        <span class="htmx-indicator"> ...</span>
+                    </button>
+                    <div id="login-error" class="error-msg"></div>
+                </form>
+            </div>
+
+            <div id="register-panel" class="form-panel">
+                <form
+                    hx-post="/register/"
+                    hx-on::after-request="handleRegister(event)"
+                    hx-ext="json-enc"
+                >
+                    <div class="field">
+                        <label>name</label>
+                        <input
+                            type="text"
+                            name="name"
+                            placeholder="Your name"
+                            required
+                        />
+                    </div>
+                    <div class="field">
+                        <label>email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            required
+                        />
+                    </div>
+                    <div class="field">
+                        <label>password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="min. 5 characters"
+                            required
+                        />
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <span>create account</span>
+                        <span class="htmx-indicator"> ...</span>
+                    </button>
+                    <div id="register-error" class="error-msg"></div>
+                </form>
+            </div>
+
+            <p class="footer-text">analyze your stack traces with AI</p>
+        </div>
+
+        <script>
+            function switchTab(tab) {
+                document
+                    .querySelectorAll(".tab")
+                    .forEach((t) => t.classList.remove("active"));
+                document
+                    .querySelectorAll(".form-panel")
+                    .forEach((p) => p.classList.remove("active"));
+                document
+                    .querySelector(
+                        `.tab:${tab === "login" ? "first-child" : "last-child"}`,
+                    )
+                    .classList.add("active");
+                document.getElementById(`${tab}-panel`).classList.add("active");
+            }
+
+            function handleLogin(event) {
+                const response = event.detail.xhr;
+                const errorEl = document.getElementById("login-error");
+                if (response.status === 200) {
+                    const data = JSON.parse(response.responseText);
+                    localStorage.setItem("token", data.access_token);
+                    window.location.href = "/dashboard";
+                } else {
+                    try {
+                        const data = JSON.parse(response.responseText);
+                        errorEl.textContent = data.message || "Login failed";
+                    } catch {
+                        errorEl.textContent = "Login failed";
+                    }
+                    errorEl.classList.add("visible");
+                }
+            }
+
+            function handleRegister(event) {
+                const response = event.detail.xhr;
+                const errorEl = document.getElementById("register-error");
+                if (response.status === 201) {
+                    switchTab("login");
+                } else {
+                    const data = JSON.parse(response.responseText);
+                    errorEl.textContent = data.message || "Registration failed";
+                    errorEl.classList.add("visible");
+                }
+            }
+        </script>
+    </body>
+</html>

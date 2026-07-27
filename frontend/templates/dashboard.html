@@ -7,6 +7,7 @@
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <script src="https://cdn.jsdelivr.net/npm/marked@18.0.7/lib/marked.umd.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
         <style>
             @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap");
 
@@ -487,6 +488,38 @@
                 font-size: var(--text-sm);
             }
 
+            .result-panel .hljs-keyword,
+            .result-panel .hljs-built_in,
+            .result-panel .hljs-literal {
+                color: var(--accent);
+                font-weight: 700;
+            }
+
+            .result-panel .hljs-title,
+            .result-panel .hljs-title.function_,
+            .result-panel .hljs-title.class_ {
+                color: var(--code-text);
+            }
+
+            .result-panel .hljs-string,
+            .result-panel .hljs-doctag {
+                color: #a8c98a;
+            }
+
+            .result-panel .hljs-number {
+                color: #e8846b;
+            }
+
+            .result-panel .hljs-comment {
+                color: var(--text-muted);
+                font-style: italic;
+            }
+
+            .result-panel .hljs-params,
+            .result-panel .hljs-attr {
+                color: var(--pre-text);
+            }
+
             .result-panel blockquote {
                 margin: 1rem 0;
                 padding-left: 1rem;
@@ -648,6 +681,13 @@
                     .filter((s) => s.title && s.content);
             }
 
+            function highlightCodeBlocks(container) {
+                if (typeof hljs === "undefined") return;
+                container.querySelectorAll("pre code").forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }
+
             function renderAnalysis(markdown) {
                 const tabsEl = document.getElementById("result-tabs");
                 const panelsEl = document.getElementById("result-panels");
@@ -659,6 +699,7 @@
                 if (sections.length < 2) {
                     tabsEl.hidden = true;
                     panelsEl.innerHTML = `<div class="result-panel active">${marked.parse(markdown)}</div>`;
+                    highlightCodeBlocks(panelsEl);
                     return;
                 }
 
@@ -676,6 +717,8 @@
                     panel.innerHTML = marked.parse(section.content);
                     panelsEl.appendChild(panel);
                 });
+
+                highlightCodeBlocks(panelsEl);
             }
 
             function showResultTab(index) {

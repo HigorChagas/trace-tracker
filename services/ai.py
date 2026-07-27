@@ -26,7 +26,11 @@ def analyze_error(error: str):
     As causas mais prováveis desse erro ter ocorrido.
 
     ## Como corrigir
-    Como corrigir, com exemplo de código.
+    Como corrigir, com exemplo de código. Todo bloco de código deve usar
+    a sintaxe markdown de bloco cercado com a linguagem indicada, assim:
+    ```python
+    codigo aqui
+    ```
 
     ## Onde investigar
     Em quais pontos do código ou do fluxo vale a pena investigar primeiro.

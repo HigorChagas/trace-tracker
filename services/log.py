@@ -12,16 +12,26 @@ async def send_log(session: AsyncSession, log: str, user_id: int):
     last_line_lower = last_line.lower()
     known_error = await get_known_error(session, last_line_lower)
     if not known_error:
-        raise HTTPException(status_code=404, detail="Error not found in our database")
+        raise HTTPException(
+            status_code=404,
+            detail="We don't recognize this error yet, so we won't guess at an explanation.",
+        )
     ia_response = analyze_error(log)
     await save_error_history(session, last_line, log, ia_response, "Python", user_id)
     return ia_response
 
 
 async def get_known_error(session: AsyncSession, log: str):
-    stmt = select(KnownError).where(KnownError.error_name.ilike(f"%{log}%"))
+    stmt = select(KnownError)
     result = await session.execute(stmt)
-    return result.scalars().one_or_none()
+    errors = result.scalars().all()
+
+    log_lower = log.lower()
+    for error in errors:
+        if error.error_name.lower() in log_lower:
+            return error
+
+    return None
 
 
 async def save_error_history(
@@ -49,9 +59,10 @@ async def get_error_history(session: AsyncSession, user_id: int, page: int, limi
     offset = (page - 1) * limit
     stmt = (
         select(ErrorHistory)
+        .where(ErrorHistory.user_id == user_id)
+        .order_by(ErrorHistory.create_date.desc(), ErrorHistory.id.desc())
         .limit(limit)
         .offset(offset)
-        .where(ErrorHistory.user_id == user_id)
     )
     result = await session.execute(stmt)
     return result.scalars().all()

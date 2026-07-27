@@ -4,10 +4,12 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Trace Tracker</title>
-        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-        <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+        <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/json-enc.js" defer></script>
         <style>
-            @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap");
+            @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap");
 
             *,
             *::before,
@@ -22,15 +24,20 @@
                 --surface: #111618;
                 --surface2: #181e20;
                 --border: #1e2729;
-                --accent: #00d4a0;
-                --accent-dim: #00d4a020;
-                --accent-hover: #00edb3;
+                --accent: #e8a33d;
+                --accent-dim: #e8a33d20;
+                --accent-hover: #f2b65a;
                 --text: #e8f0ee;
                 --text-muted: #6b8880;
-                --text-dim: #3d5450;
                 --error: #ff5f5f;
                 --mono: "JetBrains Mono", monospace;
-                --sans: "Inter", sans-serif;
+                --sans: "IBM Plex Sans", sans-serif;
+
+                --text-xs: 0.6875rem;
+                --text-sm: 0.75rem;
+                --text-base: 0.875rem;
+                --text-md: 1rem;
+                --text-lg: 1.25rem;
             }
 
             body {
@@ -41,18 +48,8 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                overflow: hidden;
-            }
-
-            .bg-grid {
-                position: fixed;
-                inset: 0;
-                background-image:
-                    linear-gradient(var(--border) 1px, transparent 1px),
-                    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-                background-size: 40px 40px;
-                opacity: 0.4;
-                pointer-events: none;
+                overflow-y: auto;
+                overflow-x: hidden;
             }
 
             .bg-glow {
@@ -62,7 +59,7 @@
                 border-radius: 50%;
                 background: radial-gradient(
                     circle,
-                    #00d4a010 0%,
+                    #e8a33d10 0%,
                     transparent 70%
                 );
                 top: -200px;
@@ -80,7 +77,7 @@
 
             .logo {
                 font-family: var(--mono);
-                font-size: 1.1rem;
+                font-size: var(--text-lg);
                 font-weight: 700;
                 color: var(--accent);
                 letter-spacing: -0.5px;
@@ -108,11 +105,15 @@
             .tab {
                 flex: 1;
                 padding: 0.65rem;
+                min-height: 2.75rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 background: transparent;
                 border: none;
                 color: var(--text-muted);
                 font-family: var(--mono);
-                font-size: 0.8rem;
+                font-size: var(--text-base);
                 cursor: pointer;
                 transition: all 0.15s ease;
                 letter-spacing: 0.5px;
@@ -143,9 +144,10 @@
             .field label {
                 display: block;
                 font-family: var(--mono);
-                font-size: 0.7rem;
+                font-size: var(--text-sm);
+                font-weight: 700;
                 color: var(--text-muted);
-                letter-spacing: 1px;
+                letter-spacing: 1.5px;
                 text-transform: uppercase;
                 margin-bottom: 0.4rem;
             }
@@ -158,28 +160,33 @@
                 padding: 0.7rem 0.9rem;
                 color: var(--text);
                 font-family: var(--mono);
-                font-size: 0.85rem;
+                font-size: var(--text-base);
                 outline: none;
                 transition: border-color 0.15s ease;
             }
 
             .field input:focus {
                 border-color: var(--accent);
+                box-shadow: 0 0 0 3px var(--accent-dim);
             }
 
             .field input::placeholder {
-                color: var(--text-dim);
+                color: var(--text-muted);
             }
 
             .btn-primary {
                 width: 100%;
                 padding: 0.75rem;
+                min-height: 2.75rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 background: var(--accent);
-                color: #0a0e0f;
+                color: var(--bg);
                 border: none;
                 border-radius: 6px;
                 font-family: var(--mono);
-                font-size: 0.85rem;
+                font-size: var(--text-base);
                 font-weight: 700;
                 cursor: pointer;
                 letter-spacing: 0.5px;
@@ -195,9 +202,22 @@
                 transform: scale(0.99);
             }
 
+            .btn-primary:disabled {
+                opacity: 0.55;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .field-hint {
+                font-family: var(--mono);
+                font-size: var(--text-xs);
+                color: var(--text-muted);
+                margin-top: 0.4rem;
+            }
+
             .error-msg {
                 font-family: var(--mono);
-                font-size: 0.75rem;
+                font-size: var(--text-sm);
                 color: var(--error);
                 margin-top: 1rem;
                 padding: 0.6rem 0.9rem;
@@ -211,9 +231,25 @@
                 display: block;
             }
 
+            .success-msg {
+                font-family: var(--mono);
+                font-size: var(--text-sm);
+                color: var(--accent);
+                margin-bottom: 1rem;
+                padding: 0.6rem 0.9rem;
+                border: 1px solid #e8a33d30;
+                border-radius: 6px;
+                background: #e8a33d08;
+                display: none;
+            }
+
+            .success-msg.visible {
+                display: block;
+            }
+
             .footer-text {
-                font-size: 0.75rem;
-                color: var(--text-dim);
+                font-size: var(--text-xs);
+                color: var(--text-muted);
                 text-align: center;
                 margin-top: 2rem;
                 font-family: var(--mono);
@@ -226,10 +262,22 @@
             .htmx-request .htmx-indicator {
                 display: inline;
             }
+
+            @media (max-width: 480px) {
+                .container {
+                    padding: 1.5rem 1rem;
+                }
+            }
+
+            @media (max-height: 700px) {
+                body {
+                    align-items: flex-start;
+                    padding: 2rem 0;
+                }
+            }
         </style>
     </head>
     <body>
-        <div class="bg-grid"></div>
         <div class="bg-glow"></div>
 
         <div class="container">
@@ -245,27 +293,34 @@
             </div>
 
             <div id="login-panel" class="form-panel active">
+                <div id="login-success" class="success-msg" aria-live="polite"></div>
                 <form
                     hx-post="/login/"
                     hx-swap="none"
                     hx-on::after-request="handleLogin(event)"
                     hx-ext="json-enc"
+                    hx-disabled-elt="find button[type=submit]"
                 >
                     <div class="field">
-                        <label>email</label>
+                        <label for="login-email">email</label>
                         <input
+                            id="login-email"
                             type="email"
                             name="email"
                             placeholder="you@example.com"
+                            autocomplete="email"
                             required
                         />
                     </div>
                     <div class="field">
-                        <label>password</label>
+                        <label for="login-password">password</label>
                         <input
+                            id="login-password"
                             type="password"
                             name="password"
                             placeholder="••••••••"
+                            maxlength="100"
+                            autocomplete="current-password"
                             required
                         />
                     </div>
@@ -273,52 +328,64 @@
                         <span>sign in</span>
                         <span class="htmx-indicator"> ...</span>
                     </button>
-                    <div id="login-error" class="error-msg"></div>
+                    <div id="login-error" class="error-msg" role="alert"></div>
                 </form>
             </div>
 
             <div id="register-panel" class="form-panel">
                 <form
                     hx-post="/register/"
+                    hx-swap="none"
                     hx-on::after-request="handleRegister(event)"
                     hx-ext="json-enc"
+                    hx-disabled-elt="find button[type=submit]"
                 >
                     <div class="field">
-                        <label>name</label>
+                        <label for="register-name">name</label>
                         <input
+                            id="register-name"
                             type="text"
                             name="name"
                             placeholder="Your name"
+                            autocomplete="name"
                             required
                         />
                     </div>
                     <div class="field">
-                        <label>email</label>
+                        <label for="register-email">email</label>
                         <input
+                            id="register-email"
                             type="email"
                             name="email"
                             placeholder="you@example.com"
+                            autocomplete="email"
                             required
                         />
                     </div>
                     <div class="field">
-                        <label>password</label>
+                        <label for="register-password">password</label>
                         <input
+                            id="register-password"
                             type="password"
                             name="password"
-                            placeholder="min. 5 characters"
+                            placeholder="••••••••"
+                            minlength="5"
+                            maxlength="100"
+                            autocomplete="new-password"
+                            aria-describedby="register-password-hint"
                             required
                         />
+                        <p id="register-password-hint" class="field-hint">min. 5 characters</p>
                     </div>
                     <button type="submit" class="btn-primary">
                         <span>create account</span>
                         <span class="htmx-indicator"> ...</span>
                     </button>
-                    <div id="register-error" class="error-msg"></div>
+                    <div id="register-error" class="error-msg" role="alert"></div>
                 </form>
             </div>
 
-            <p class="footer-text">analyze your stack traces with AI</p>
+            <p class="footer-text">explains errors we recognize — nothing guessed</p>
         </div>
 
         <script>
@@ -335,6 +402,11 @@
                     )
                     .classList.add("active");
                 document.getElementById(`${tab}-panel`).classList.add("active");
+                if (tab === "register") {
+                    document
+                        .getElementById("login-success")
+                        .classList.remove("visible");
+                }
             }
 
             function handleLogin(event) {
@@ -345,6 +417,9 @@
                     localStorage.setItem("token", data.access_token);
                     window.location.href = "/dashboard";
                 } else {
+                    document
+                        .getElementById("login-success")
+                        .classList.remove("visible");
                     try {
                         const data = JSON.parse(response.responseText);
                         errorEl.textContent = data.message || "Login failed";
@@ -360,9 +435,16 @@
                 const errorEl = document.getElementById("register-error");
                 if (response.status === 201) {
                     switchTab("login");
+                    const successEl = document.getElementById("login-success");
+                    successEl.textContent = "Account created — sign in below.";
+                    successEl.classList.add("visible");
                 } else {
-                    const data = JSON.parse(response.responseText);
-                    errorEl.textContent = data.message || "Registration failed";
+                    try {
+                        const data = JSON.parse(response.responseText);
+                        errorEl.textContent = data.message || "Registration failed";
+                    } catch {
+                        errorEl.textContent = "Registration failed";
+                    }
                     errorEl.classList.add("visible");
                 }
             }

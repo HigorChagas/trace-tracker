@@ -4,11 +4,11 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Trace Tracker — Dashboard</title>
-        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-        <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <script src="https://cdn.jsdelivr.net/npm/marked@18.0.7/lib/marked.umd.min.js" defer></script>
         <style>
-            @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap");
+            @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap");
 
             *,
             *::before,
@@ -23,15 +23,27 @@
                 --surface: #111618;
                 --surface2: #181e20;
                 --border: #1e2729;
-                --accent: #00d4a0;
-                --accent-dim: #00d4a015;
-                --accent-hover: #00edb3;
+                --accent: #e8a33d;
+                --accent-dim: #e8a33d20;
+                --accent-hover: #f2b65a;
                 --text: #e8f0ee;
                 --text-muted: #6b8880;
-                --text-dim: #3d5450;
                 --error: #ff5f5f;
                 --mono: "JetBrains Mono", monospace;
-                --sans: "Inter", sans-serif;
+                --sans: "IBM Plex Sans", sans-serif;
+
+                --text-xs: 0.6875rem;
+                --text-sm: 0.75rem;
+                --text-base: 0.875rem;
+                --text-md: 1rem;
+                --text-lg: 1.25rem;
+
+                --prose-text: #c4b8a8;
+                --code-bg: #1a1206;
+                --code-text: #f2c879;
+                --code-border: #3a2a12;
+                --pre-bg: #140d05;
+                --pre-text: #e8d9b8;
             }
 
             body {
@@ -39,17 +51,6 @@
                 color: var(--text);
                 font-family: var(--sans);
                 min-height: 100vh;
-            }
-
-            .bg-grid {
-                position: fixed;
-                inset: 0;
-                background-image:
-                    linear-gradient(var(--border) 1px, transparent 1px),
-                    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-                background-size: 40px 40px;
-                opacity: 0.3;
-                pointer-events: none;
             }
 
             header {
@@ -65,7 +66,7 @@
 
             .logo {
                 font-family: var(--mono);
-                font-size: 0.95rem;
+                font-size: var(--text-lg);
                 font-weight: 700;
                 color: var(--accent);
                 display: flex;
@@ -81,12 +82,15 @@
 
             .logout-btn {
                 font-family: var(--mono);
-                font-size: 0.75rem;
+                font-size: var(--text-sm);
                 color: var(--text-muted);
                 background: transparent;
                 border: 1px solid var(--border);
                 border-radius: 6px;
                 padding: 0.4rem 0.8rem;
+                min-height: 2.75rem;
+                display: inline-flex;
+                align-items: center;
                 cursor: pointer;
                 transition: all 0.15s;
             }
@@ -118,10 +122,11 @@
 
             .section-label {
                 font-family: var(--mono);
-                font-size: 0.65rem;
-                letter-spacing: 2px;
+                font-size: var(--text-sm);
+                font-weight: 700;
+                letter-spacing: 1.5px;
                 text-transform: uppercase;
-                color: var(--text-dim);
+                color: var(--text-muted);
                 margin-bottom: 1rem;
             }
 
@@ -133,7 +138,7 @@
                 padding: 1rem;
                 color: var(--text);
                 font-family: var(--mono);
-                font-size: 0.8rem;
+                font-size: var(--text-base);
                 line-height: 1.6;
                 resize: vertical;
                 min-height: 160px;
@@ -143,20 +148,25 @@
 
             .log-input:focus {
                 border-color: var(--accent);
+                box-shadow: 0 0 0 3px var(--accent-dim);
             }
             .log-input::placeholder {
-                color: var(--text-dim);
+                color: var(--text-muted);
             }
 
             .analyze-btn {
                 margin-top: 1rem;
                 padding: 0.7rem 1.5rem;
+                min-height: 2.75rem;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
                 background: var(--accent);
-                color: #0a0e0f;
+                color: var(--bg);
                 border: none;
                 border-radius: 6px;
                 font-family: var(--mono);
-                font-size: 0.8rem;
+                font-size: var(--text-base);
                 font-weight: 700;
                 cursor: pointer;
                 letter-spacing: 0.5px;
@@ -169,6 +179,11 @@
             .analyze-btn:active {
                 transform: scale(0.99);
             }
+            .analyze-btn:disabled {
+                opacity: 0.55;
+                cursor: not-allowed;
+                transform: none;
+            }
 
             .result-area {
                 margin-top: 2rem;
@@ -178,7 +193,7 @@
                 background: var(--surface);
                 border: 1px solid var(--border);
                 border-radius: 8px;
-                padding: 1.25rem;
+                padding: 1.5rem;
                 display: none;
             }
 
@@ -186,19 +201,49 @@
                 display: block;
             }
 
-            .result-box pre {
+            .result-tabs {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0;
+                margin-bottom: 1rem;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .result-tab {
+                flex: 1;
+                min-width: 6rem;
+                padding: 0.6rem 0.5rem;
+                min-height: 2.75rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                background: transparent;
+                border: none;
+                color: var(--text-muted);
                 font-family: var(--mono);
-                font-size: 0.8rem;
-                line-height: 1.7;
-                white-space: pre-wrap;
-                word-break: break-word;
+                font-size: var(--text-sm);
+                cursor: pointer;
+                letter-spacing: 0.5px;
+                transition: all 0.15s ease;
+            }
+
+            .result-tab.active {
+                background: var(--accent-dim);
+                color: var(--accent);
+            }
+
+            .result-tab:hover:not(.active) {
                 color: var(--text);
+                background: var(--surface2);
             }
 
             .loading-indicator {
                 display: none;
                 font-family: var(--mono);
-                font-size: 0.8rem;
+                font-size: var(--text-base);
                 color: var(--accent);
                 margin-top: 1rem;
                 animation: pulse 1.5s ease-in-out infinite;
@@ -219,6 +264,10 @@
             }
 
             .history-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
                 background: var(--surface);
                 border: 1px solid var(--border);
                 border-radius: 8px;
@@ -228,13 +277,24 @@
                 transition: border-color 0.15s;
             }
 
-            .history-item:hover {
+            .history-item:hover,
+            .history-item:focus-visible {
                 border-color: var(--accent);
+            }
+
+            .history-item:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+            }
+
+            .history-item-main {
+                min-width: 0;
+                flex: 1;
             }
 
             .history-error-name {
                 font-family: var(--mono);
-                font-size: 0.75rem;
+                font-size: var(--text-base);
                 color: var(--accent);
                 margin-bottom: 0.3rem;
                 white-space: nowrap;
@@ -244,18 +304,24 @@
 
             .history-date {
                 font-family: var(--mono);
-                font-size: 0.65rem;
-                color: var(--text-dim);
+                font-size: var(--text-xs);
+                color: var(--text-muted);
             }
 
             .history-delete {
-                float: right;
+                flex-shrink: 0;
+                min-width: 3.75rem;
+                min-height: 2.75rem;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                text-align: right;
                 background: transparent;
                 border: none;
-                color: var(--text-dim);
+                color: var(--text-muted);
                 cursor: pointer;
                 font-family: var(--mono);
-                font-size: 0.7rem;
+                font-size: var(--text-sm);
                 padding: 0;
                 transition: color 0.15s;
             }
@@ -264,19 +330,65 @@
                 color: var(--error);
             }
 
+            .history-delete.armed {
+                color: var(--error);
+                font-weight: 700;
+            }
+
+            .history-delete:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .load-more-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                padding: 0.6rem;
+                min-height: 2.75rem;
+                background: transparent;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text-muted);
+                font-family: var(--mono);
+                font-size: var(--text-sm);
+                letter-spacing: 0.5px;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+
+            .load-more-btn:hover {
+                color: var(--accent);
+                border-color: var(--accent);
+            }
+
+            .load-more-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .load-more-btn[hidden] {
+                display: none;
+            }
+
             .empty-history {
                 font-family: var(--mono);
-                font-size: 0.75rem;
-                color: var(--text-dim);
+                font-size: var(--text-sm);
+                color: var(--text-muted);
                 text-align: center;
                 padding: 2rem 0;
             }
 
             .error-msg {
                 font-family: var(--mono);
-                font-size: 0.75rem;
+                font-size: var(--text-sm);
                 color: var(--error);
                 margin-top: 0.75rem;
+                padding: 0.6rem 0.9rem;
+                border: 1px solid #ff5f5f30;
+                border-radius: 6px;
+                background: #ff5f5f08;
                 display: none;
             }
 
@@ -284,76 +396,162 @@
                 display: block;
             }
 
-            #result-content h1,
-            #result-content h2,
-            #result-content h3 {
+            .error-msg.info {
+                color: var(--text-muted);
+                border-color: var(--border);
+                background: var(--surface);
+            }
+
+            .scope-note {
+                font-family: var(--mono);
+                font-size: var(--text-xs);
+                color: var(--text-muted);
+                margin: -0.6rem 0 1rem;
+            }
+
+            .result-panel {
+                display: none;
+                max-width: 68ch;
+                font-family: var(--mono);
+                font-size: var(--text-base);
+                line-height: 1.7;
+                word-break: break-word;
+                color: var(--text);
+            }
+
+            .result-panel.active {
+                display: block;
+            }
+
+            .result-panel h1,
+            .result-panel h2,
+            .result-panel h3 {
                 color: var(--accent);
                 font-family: var(--mono);
-                font-size: 0.85rem;
+                font-weight: 700;
+                font-size: var(--text-md);
                 margin: 1.2rem 0 0.5rem;
-                letter-spacing: 0.5px;
+                letter-spacing: 0.3px;
             }
 
-            #result-content p {
-                font-size: 0.82rem;
+            .result-panel h1:first-child,
+            .result-panel h2:first-child,
+            .result-panel h3:first-child {
+                margin-top: 0;
+            }
+
+            .result-panel > p:first-child {
+                font-size: var(--text-base);
                 line-height: 1.8;
-                margin-bottom: 0.75rem;
-                color: #a8c4be;
-            }
-
-            #result-content strong {
                 color: var(--text);
-                font-weight: 500;
+                margin-bottom: 1rem;
             }
 
-            #result-content code {
+            .result-panel p {
+                font-size: var(--text-base);
+                line-height: 1.8;
+                margin-bottom: 1rem;
+                color: var(--prose-text);
+            }
+
+            .result-panel strong {
+                color: var(--accent);
+                font-weight: 700;
+            }
+
+            .result-panel code {
                 font-family: var(--mono);
-                font-size: 0.75rem;
-                background: #0d1a17;
+                font-size: var(--text-sm);
+                background: var(--code-bg);
                 padding: 0.15rem 0.4rem;
                 border-radius: 4px;
-                color: #7fffd4;
-                border: 1px solid #1a3530;
+                color: var(--code-text);
+                border: 1px solid var(--code-border);
             }
 
-            #result-content pre {
-                background: #0a1412;
-                border: 1px solid #1a3530;
+            .result-panel pre {
+                background: var(--pre-bg);
+                border: 1px solid var(--code-border);
+                border-top: 2px solid var(--accent);
                 border-radius: 6px;
-                padding: 1rem;
+                padding: 1.1rem 1rem;
                 overflow-x: auto;
-                margin: 0.75rem 0;
+                margin: 1rem 0;
             }
 
-            #result-content pre code {
+            .result-panel pre code {
                 background: transparent;
                 padding: 0;
-                color: #c8e6c9;
+                color: var(--pre-text);
                 border: none;
-                font-size: 0.78rem;
+                font-size: var(--text-sm);
             }
 
-            #result-content ol,
-            #result-content ul {
-                padding-left: 1.5rem;
-                margin-bottom: 0.75rem;
-                font-size: 0.82rem;
+            .result-panel blockquote {
+                margin: 1rem 0;
+                padding-left: 1rem;
+                color: var(--text-muted);
+                font-style: italic;
+            }
+
+            .result-panel ol,
+            .result-panel ul {
+                margin-bottom: 1rem;
+                font-size: var(--text-base);
                 line-height: 1.8;
-                color: #a8c4be;
+                color: var(--prose-text);
             }
 
-            #result-content li {
-                margin-bottom: 0.3rem;
+            .result-panel ol {
+                padding-left: 1.4rem;
             }
 
-            #result-content li::marker {
+            .result-panel ol li::marker {
                 color: var(--accent);
+                font-weight: 700;
+            }
+
+            .result-panel ul {
+                list-style: none;
+                padding-left: 0;
+            }
+
+            .result-panel ul li {
+                position: relative;
+                padding-left: 1.4rem;
+            }
+
+            .result-panel ul li::before {
+                content: "→";
+                position: absolute;
+                left: 0;
+                color: var(--accent);
+                font-weight: 700;
+            }
+
+            .result-panel li {
+                margin-bottom: 0.4rem;
+            }
+
+            @media (max-width: 768px) {
+                .layout {
+                    grid-template-columns: 1fr;
+                    height: auto;
+                    min-height: calc(100vh - 57px);
+                }
+
+                .main-panel {
+                    border-right: none;
+                    border-bottom: 1px solid var(--border);
+                }
+
+                .sidebar {
+                    max-height: 60vh;
+                }
             }
         </style>
     </head>
     <body>
-        <div class="bg-grid"></div>
-
         <header>
             <div class="logo">trace-tracker</div>
             <button class="logout-btn" onclick="logout()">logout</button>
@@ -362,6 +560,9 @@
         <div class="layout">
             <div class="main-panel">
                 <p class="section-label">analyze error</p>
+                <p class="scope-note">
+                    Explains Python exceptions we recognize. Anything outside that list is declined, not guessed at.
+                </p>
 
                 <textarea
                     id="log-input"
@@ -369,9 +570,13 @@
                     placeholder="Paste your stack trace here...&#10;&#10;Traceback (most recent call last):&#10;  File 'main.py', line 4&#10;ZeroDivisionError: division by zero"
                 ></textarea>
 
-                <div id="analyze-error" class="error-msg"></div>
+                <div id="analyze-error" class="error-msg" role="alert"></div>
 
-                <button class="analyze-btn" onclick="analyzeLog()">
+                <button
+                    id="analyze-btn"
+                    class="analyze-btn"
+                    onclick="analyzeLog()"
+                >
                     analyze →
                 </button>
 
@@ -380,16 +585,26 @@
                         analyzing your error...
                     </div>
                     <div id="result-box" class="result-box">
-                        <pre id="result-content"></pre>
+                        <div id="result-tabs" class="result-tabs"></div>
+                        <div id="result-panels"></div>
                     </div>
                 </div>
             </div>
 
             <div class="sidebar">
                 <p class="section-label">history</p>
+                <div id="history-error" class="error-msg" role="alert"></div>
                 <div id="history-list">
                     <p class="empty-history">no history yet</p>
                 </div>
+                <button
+                    id="history-load-more"
+                    class="load-more-btn"
+                    onclick="loadMoreHistory()"
+                    hidden
+                >
+                    load more ↓
+                </button>
             </div>
         </div>
 
@@ -404,9 +619,72 @@
                 };
             }
 
+            function escapeHtmlAttr(str) {
+                return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+            }
+
             function logout() {
                 localStorage.removeItem("token");
                 window.location.href = "/";
+            }
+
+            function splitIntoSections(markdown) {
+                const headerRe = /^##\s+(.+?)\s*$/;
+                const sections = [];
+                let current = null;
+
+                for (const line of markdown.split("\n")) {
+                    const headerMatch = line.match(headerRe);
+                    if (headerMatch) {
+                        current = { title: headerMatch[1].trim(), lines: [] };
+                        sections.push(current);
+                    } else if (current) {
+                        current.lines.push(line);
+                    }
+                }
+
+                return sections
+                    .map((s) => ({ title: s.title, content: s.lines.join("\n").trim() }))
+                    .filter((s) => s.title && s.content);
+            }
+
+            function renderAnalysis(markdown) {
+                const tabsEl = document.getElementById("result-tabs");
+                const panelsEl = document.getElementById("result-panels");
+                tabsEl.innerHTML = "";
+                panelsEl.innerHTML = "";
+
+                const sections = splitIntoSections(markdown);
+
+                if (sections.length < 2) {
+                    tabsEl.hidden = true;
+                    panelsEl.innerHTML = `<div class="result-panel active">${marked.parse(markdown)}</div>`;
+                    return;
+                }
+
+                tabsEl.hidden = false;
+                sections.forEach((section, index) => {
+                    const tabBtn = document.createElement("button");
+                    tabBtn.type = "button";
+                    tabBtn.className = "result-tab" + (index === 0 ? " active" : "");
+                    tabBtn.textContent = section.title;
+                    tabBtn.onclick = () => showResultTab(index);
+                    tabsEl.appendChild(tabBtn);
+
+                    const panel = document.createElement("div");
+                    panel.className = "result-panel" + (index === 0 ? " active" : "");
+                    panel.innerHTML = marked.parse(section.content);
+                    panelsEl.appendChild(panel);
+                });
+            }
+
+            function showResultTab(index) {
+                document
+                    .querySelectorAll("#result-tabs .result-tab")
+                    .forEach((btn, i) => btn.classList.toggle("active", i === index));
+                document
+                    .querySelectorAll("#result-panels .result-panel")
+                    .forEach((panel, i) => panel.classList.toggle("active", i === index));
             }
 
             async function analyzeLog() {
@@ -414,13 +692,21 @@
                 const errorEl = document.getElementById("analyze-error");
                 const loadingEl = document.getElementById("loading");
                 const resultBox = document.getElementById("result-box");
-                const resultContent = document.getElementById("result-content");
+                const analyzeBtn = document.getElementById("analyze-btn");
 
-                if (!log) return;
+                if (analyzeBtn.disabled) return;
 
-                errorEl.classList.remove("visible");
+                if (!log) {
+                    errorEl.classList.remove("info");
+                    errorEl.textContent = "Paste a stack trace before analyzing.";
+                    errorEl.classList.add("visible");
+                    return;
+                }
+
+                errorEl.classList.remove("visible", "info");
                 resultBox.classList.remove("visible");
                 loadingEl.classList.add("visible");
+                analyzeBtn.disabled = true;
 
                 try {
                     const response = await fetch("/search-log/", {
@@ -430,83 +716,188 @@
                     });
 
                     const data = await response.json();
-                    loadingEl.classList.remove("visible");
 
                     if (response.ok) {
-                        resultContent.innerHTML = marked.parse(data);
+                        renderAnalysis(data);
                         resultBox.classList.add("visible");
                         loadHistory();
+                    } else if (response.status === 404) {
+                        errorEl.textContent =
+                            data.message ||
+                            "We don't recognize this error yet, so we won't guess at an explanation.";
+                        errorEl.classList.add("visible", "info");
                     } else {
                         errorEl.textContent =
-                            data.message || "Error analyzing log";
+                            data.message || "Something went wrong while analyzing that log.";
                         errorEl.classList.add("visible");
                     }
                 } catch (err) {
-                    loadingEl.classList.remove("visible");
-                    errorEl.textContent = "Failed to connect to server";
+                    errorEl.textContent = "Failed to connect to server. Check your connection and try again.";
                     errorEl.classList.add("visible");
+                } finally {
+                    loadingEl.classList.remove("visible");
+                    analyzeBtn.disabled = false;
                 }
             }
+
+            const HISTORY_PAGE_SIZE = 10;
+            let historyPage = 1;
+            let historyLoadingMore = false;
 
             async function loadHistory() {
+                const historyError = document.getElementById("history-error");
+                const loadMoreBtn = document.getElementById("history-load-more");
+                historyPage = 1;
                 try {
-                    const response = await fetch("/history/", {
-                        headers: getHeaders(),
-                    });
+                    const response = await fetch(
+                        `/history/?page=${historyPage}&limit=${HISTORY_PAGE_SIZE}`,
+                        { headers: getHeaders() },
+                    );
+                    if (!response.ok) throw new Error("failed to load history");
                     const data = await response.json();
-                    renderHistory(data);
+                    historyError.classList.remove("visible");
+                    renderHistory(data, false);
+                    loadMoreBtn.hidden = data.length < HISTORY_PAGE_SIZE;
                 } catch (err) {
-                    console.error("Failed to load history");
+                    historyError.textContent = "Couldn't load history.";
+                    historyError.classList.add("visible");
+                    loadMoreBtn.hidden = true;
                 }
             }
 
-            function renderHistory(items) {
+            async function loadMoreHistory() {
+                if (historyLoadingMore) return;
+                const historyError = document.getElementById("history-error");
+                const loadMoreBtn = document.getElementById("history-load-more");
+                const nextPage = historyPage + 1;
+
+                historyLoadingMore = true;
+                loadMoreBtn.disabled = true;
+                loadMoreBtn.textContent = "loading…";
+
+                try {
+                    const response = await fetch(
+                        `/history/?page=${nextPage}&limit=${HISTORY_PAGE_SIZE}`,
+                        { headers: getHeaders() },
+                    );
+                    if (!response.ok) throw new Error("failed to load more history");
+                    const data = await response.json();
+                    historyPage = nextPage;
+                    historyError.classList.remove("visible");
+                    renderHistory(data, true);
+                    loadMoreBtn.hidden = data.length < HISTORY_PAGE_SIZE;
+                } catch (err) {
+                    historyError.textContent = "Couldn't load more history.";
+                    historyError.classList.add("visible");
+                } finally {
+                    historyLoadingMore = false;
+                    loadMoreBtn.disabled = false;
+                    loadMoreBtn.textContent = "load more ↓";
+                }
+            }
+
+            function renderHistory(items, append) {
                 const list = document.getElementById("history-list");
+
+                if (!append) {
+                    list.innerHTML = "";
+                }
+
                 if (!items || items.length === 0) {
-                    list.innerHTML =
-                        '<p class="empty-history">no history yet</p>';
+                    if (!append) {
+                        list.innerHTML =
+                            '<p class="empty-history">no history yet</p>';
+                    }
                     return;
                 }
 
-                list.innerHTML = items
+                const html = items
                     .map(
                         (item) => `
-                <div class="history-item" onclick="showHistoryItem(${item.id})">
+                <div
+                    class="history-item"
+                    role="button"
+                    tabindex="0"
+                    onclick="showHistoryItem(${item.id})"
+                    onkeydown="handleHistoryItemKeydown(event, ${item.id})"
+                >
+                    <div class="history-item-main">
+                        <div class="history-error-name" title="${escapeHtmlAttr(item.error_name)}">${item.error_name}</div>
+                        <div class="history-date">${new Date(item.create_date).toLocaleDateString()}</div>
+                    </div>
                     <button class="history-delete" onclick="deleteItem(event, ${item.id})">delete</button>
-                    <div class="history-error-name">${item.error_name}</div>
-                    <div class="history-date">${new Date(item.create_date).toLocaleDateString()}</div>
                 </div>
             `,
                     )
                     .join("");
+
+                list.insertAdjacentHTML("beforeend", html);
+            }
+
+            function handleHistoryItemKeydown(event, id) {
+                if (event.target.closest(".history-delete")) return;
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    showHistoryItem(id);
+                }
             }
 
             async function showHistoryItem(id) {
+                const errorEl = document.getElementById("analyze-error");
                 try {
                     const response = await fetch(`/history/${id}`, {
                         headers: getHeaders(),
                     });
+                    if (!response.ok) throw new Error("failed to load item");
                     const data = await response.json();
                     const resultBox = document.getElementById("result-box");
-                    const resultContent =
-                        document.getElementById("result-content");
-                    resultContent.textContent = data.ia_response;
+                    errorEl.classList.remove("visible");
+                    renderAnalysis(data.ia_response);
                     resultBox.classList.add("visible");
                 } catch (err) {
-                    console.error("Failed to load item");
+                    errorEl.textContent = "Couldn't load that analysis.";
+                    errorEl.classList.add("visible");
                 }
             }
 
-            async function deleteItem(event, id) {
+            function deleteItem(event, id) {
                 event.stopPropagation();
+                const btn = event.currentTarget;
+
+                if (btn.dataset.armed !== "true") {
+                    btn.dataset.armed = "true";
+                    btn.textContent = "confirm?";
+                    btn.classList.add("armed");
+                    clearTimeout(btn._disarmTimer);
+                    btn._disarmTimer = setTimeout(() => disarmDelete(btn), 4000);
+                    return;
+                }
+
+                clearTimeout(btn._disarmTimer);
+                performDelete(id, btn);
+            }
+
+            function disarmDelete(btn) {
+                btn.dataset.armed = "false";
+                btn.textContent = "delete";
+                btn.classList.remove("armed");
+            }
+
+            async function performDelete(id, btn) {
+                const historyError = document.getElementById("history-error");
+                btn.disabled = true;
                 try {
-                    await fetch(`/history/${id}`, {
+                    const response = await fetch(`/history/${id}`, {
                         method: "DELETE",
                         headers: getHeaders(),
                     });
+                    if (!response.ok) throw new Error("failed to delete item");
                     loadHistory();
                 } catch (err) {
-                    console.error("Failed to delete item");
+                    historyError.textContent = "Couldn't delete that entry — try again.";
+                    historyError.classList.add("visible");
+                    disarmDelete(btn);
+                    btn.disabled = false;
                 }
             }
 

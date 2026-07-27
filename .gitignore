@@ -14,3 +14,8 @@ database.db
 
 # .environments
 .env
+
+# config folders
+.claude
+.impeccable
+.pytest_cache
